@@ -36,6 +36,12 @@ function renderForm(type) {
     sectorBtn.textContent = 'Add Sector Inputs';
     sectorBtn.addEventListener('click', () => {
       createSectorInputs(); // Generate inputs for sectors dynamically
+      sectorBtn.disabled = true; // Disable the button after click
+
+        // Disable the initial inputs
+        document.getElementById('numSectors').disabled = true;
+        document.getElementById('totalValue').disabled = true;
+        document.getElementById('chartTitle').disabled = true;
     });
     formContainer.appendChild(sectorBtn);
   }
@@ -54,6 +60,12 @@ function renderForm(type) {
     barBtn.textContent = 'Add Bar Inputs';
     barBtn.addEventListener('click', () => {
       createBarInputs(); // Generate inputs for bars dynamically
+      barBtn.disabled = true;
+
+        document.getElementById('numBars').disabled = true;
+        document.getElementById('gridInterval').disabled = true;
+        document.getElementById('yLabel').disabled = true;
+        document.getElementById('chartTitle').disabled = true;
     });
     formContainer.appendChild(barBtn);
   }
@@ -86,6 +98,12 @@ function createNumberInput(labelText, id, min, max) {
   input.id = id;
   input.min = min;
   input.max = max;
+
+  // Real-time enforcement of the max value
+  input.addEventListener('input', () => {
+    if (parseFloat(input.value) > max) input.value = max;
+  });
+
   div.appendChild(label);
   div.appendChild(input);
   return div;
@@ -214,32 +232,51 @@ function createBarInputs() {
   inputArea.appendChild(drawBtn);
 }
 
-// Draw Bar Chart with unique bar colors
-function drawBarChart(title, yLabel, grid, num) {
+// Draw Bar Chart with unique bar colors and enforced limits
+function drawBarChart(title, yLabel, gridInterval, num) {
   google.charts.setOnLoadCallback(() => {
-    // Each row includes a 'style' role for per-bar color
     let dataArr = [['Label', 'Value', { role: 'style' }]];
     const colors = generateColors(num);
 
-    // Build dataset from user inputs
+    let maxValue = 0; // Track maximum value for setting the Y-axis
+
+    // Collect bar data and validate
     for (let i = 1; i <= num; i++) {
       const label = document.getElementById(`barLabel${i}`).value;
       const value = parseFloat(document.getElementById(`barValue${i}`).value);
+
+      if (isNaN(value) || value < 0) {
+        alert(`Bar ${i}: please enter a valid positive number.`);
+        return;
+      }
+      if (value > 400) {
+        alert(`Bar ${i}: value exceeds maximum (400).`);
+        return;
+      }
+
+      if (value > maxValue) maxValue = value;
       dataArr.push([label, value, `color: ${colors[i - 1]}`]);
     }
 
-    // Convert array to Google DataTable
+    // Convert to Google DataTable
     const data = google.visualization.arrayToDataTable(dataArr);
 
-    // Configure chart layout and axes
+    // Round maxValue up to the next multiple of gridInterval
+    const roundedMax = Math.ceil(maxValue / gridInterval) * gridInterval;
+
     const options = {
       title: title,
       width: 800,
       height: 500,
       hAxis: { title: 'Bars' },
-      vAxis: { title: yLabel, gridlines: { count: Math.floor(400 / grid) } },
+      vAxis: {
+        title: yLabel,
+        viewWindow: { min: 0, max: roundedMax }, // set min and max
+        gridlines: { count: Math.floor(roundedMax / gridInterval) + 1 }, // approximate grid count
+        ticks: Array.from({length: roundedMax / gridInterval + 1}, (_, i) => i * gridInterval) // force exact intervals
+      },
       legend: { position: 'none' },
-      bar: { groupWidth: '70%' } // Controls bar width spacing
+      bar: { groupWidth: '70%' },
     };
 
     // Draw the column chart (vertical bars)
@@ -247,6 +284,7 @@ function drawBarChart(title, yLabel, grid, num) {
     chart.draw(data, options);
   });
 }
+
 
 // =============================
 // Color Generator
