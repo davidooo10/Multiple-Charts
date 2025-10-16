@@ -1,83 +1,174 @@
-// Load the Google Charts library and specify that we’ll use the 'corechart' package
+// =============================
+// Load Google Charts library
+// =============================
+// We load the 'corechart' package which allows us to create Pie and Column (Bar) charts
 google.charts.load('current', { packages: ['corechart'] });
 
-// Get references to key DOM elements from index.html
-const chartTypeSelect = document.getElementById('chartType');
-const formContainer = document.getElementById('formContainer');
-const chartContainer = document.getElementById('chartContainer');
-const generateBtn = document.getElementById('generateBtn');
+// =============================
+// DOM Elements
+// =============================
+// Get references to important HTML elements that we'll manipulate
+const chartTypeSelect = document.getElementById('chartType'); // Dropdown to choose chart type
+const formContainer = document.getElementById('formContainer'); // Container to hold dynamic input forms
+const chartContainer = document.getElementById('chartContainer'); // Container where chart will be drawn
+const generateBtn = document.getElementById('generateBtn'); // Button to start generating input form
 
-// When user clicks “Generate Chart”, show the correct form (Pie or Bar)
+// =============================
+// Event: Generate Chart Button
+// =============================
+// When user clicks "Generate Chart", determine which chart type is selected
+// and call renderForm to display the corresponding input fields
 generateBtn.addEventListener('click', () => {
-  const type = chartTypeSelect.value; // Get the selected chart type
-  renderForm(type); // Generate the corresponding form inputs
+  const type = chartTypeSelect.value; // Get current value of chart type dropdown
+  renderForm(type); // Render form inputs dynamically
 });
 
 // =============================
 // Render dynamic input form
 // =============================
+// This function generates inputs based on chart type (pie or bar)
 function renderForm(type) {
-  formContainer.innerHTML = ''; // Clear any existing form content
+  formContainer.innerHTML = ''; // Clear previous form contents to avoid duplication
 
-  // Create chart title input (common to both chart types)
-  const titleInput = createInput('Title:', 'chartTitle');
-  formContainer.appendChild(titleInput);
+  // -----------------------------
+  // Chart Title (common to all charts)
+  // -----------------------------
+  const titleInput = createInput('Title:', 'chartTitle'); // Create text input for chart title
+  formContainer.appendChild(titleInput); // Add title input to the form
 
-  // ---------- Pie Chart Form ----------
+  // -----------------------------
+  // Pie Chart Inputs
+  // -----------------------------
   if (type === 'pie') {
+    // Input: number of sectors
     const sectorCountInput = createNumberInput('Number of sectors (2–6):', 'numSectors', 2, 6);
     formContainer.appendChild(sectorCountInput);
 
+    // Input: total value of all sectors
     const totalValueInput = createNumberInput('Total value of all sectors:', 'totalValue', 10, 10000);
     formContainer.appendChild(totalValueInput);
 
-    // Button to create sector inputs (labels and values)
+    // Button to generate sector input fields dynamically
     const sectorBtn = document.createElement('button');
     sectorBtn.textContent = 'Add Sector Inputs';
     sectorBtn.addEventListener('click', () => {
-      createSectorInputs(); // Generate inputs for sectors dynamically
-      sectorBtn.disabled = true; // Disable the button after click
+      clearErrors(); // Remove previous error messages
 
-        // Disable the initial inputs
-        document.getElementById('numSectors').disabled = true;
-        document.getElementById('totalValue').disabled = true;
-        document.getElementById('chartTitle').disabled = true;
+      // -----------------------------
+      // Get values from user inputs
+      // -----------------------------
+      const numSectors = parseInt(document.getElementById('numSectors').value);
+      const totalValue = parseFloat(document.getElementById('totalValue').value);
+      const chartTitle = document.getElementById('chartTitle').value.trim();
+
+      let valid = true; // Flag to track if inputs are valid
+
+      // -----------------------------
+      // Validate Inputs
+      // -----------------------------
+      if (isNaN(numSectors) || numSectors < 2 || numSectors > 6) {
+        showError('numSectors', 'Enter 2–6 sectors.');
+        valid = false;
+      }
+      if (isNaN(totalValue) || totalValue <= 0) {
+        showError('totalValue', 'Enter a valid total value.');
+        valid = false;
+      }
+      if (!chartTitle) {
+        showError('chartTitle', 'Enter a chart title.');
+        valid = false;
+      }
+
+      if (!valid) return; // Stop execution if any input is invalid
+
+      // -----------------------------
+      // Generate input fields for each sector
+      // -----------------------------
+      createSectorInputs();
+
+      // -----------------------------
+      // Disable Add button and initial inputs to prevent re-clicking
+      // -----------------------------
+      sectorBtn.disabled = true;
+      disableFields(['numSectors','totalValue','chartTitle']);
     });
     formContainer.appendChild(sectorBtn);
   }
 
-  // ---------- Bar Chart Form ----------
+  // -----------------------------
+  // Bar Chart Inputs
+  // -----------------------------
   else if (type === 'bar') {
+    // Input: number of bars
     const barCountInput = createNumberInput('Number of bars (2–6):', 'numBars', 2, 6);
+    // Input: gridline interval for Y-axis
     const gridInput = createNumberInput('Gridline interval (10–100):', 'gridInterval', 10, 100);
+    // Input: Y-axis label
     const yLabelInput = createInput('Y-axis Label:', 'yLabel');
+
     formContainer.appendChild(barCountInput);
     formContainer.appendChild(gridInput);
     formContainer.appendChild(yLabelInput);
 
-    // Button to create bar inputs (labels and values)
+    // Button to generate bar input fields dynamically
     const barBtn = document.createElement('button');
     barBtn.textContent = 'Add Bar Inputs';
     barBtn.addEventListener('click', () => {
-      createBarInputs(); // Generate inputs for bars dynamically
-      barBtn.disabled = true;
+      clearErrors(); // Remove previous error messages
 
-        document.getElementById('numBars').disabled = true;
-        document.getElementById('gridInterval').disabled = true;
-        document.getElementById('yLabel').disabled = true;
-        document.getElementById('chartTitle').disabled = true;
+      // -----------------------------
+      // Get values from user inputs
+      // -----------------------------
+      const numBars = parseInt(document.getElementById('numBars').value);
+      const gridInterval = parseInt(document.getElementById('gridInterval').value);
+      const yLabel = document.getElementById('yLabel').value.trim();
+      const chartTitle = document.getElementById('chartTitle').value.trim();
+
+      let valid = true;
+
+      // -----------------------------
+      // Validate Inputs
+      // -----------------------------
+      if (isNaN(numBars) || numBars < 2 || numBars > 6) {
+        showError('numBars', 'Enter 2–6 bars.');
+        valid = false;
+      }
+      if (isNaN(gridInterval) || gridInterval < 10 || gridInterval > 100) {
+        showError('gridInterval', 'Enter valid grid interval (10–100).');
+        valid = false;
+      }
+      if (!yLabel) {
+        showError('yLabel', 'Enter a Y-axis label.');
+        valid = false;
+      }
+      if (!chartTitle) {
+        showError('chartTitle', 'Enter a chart title.');
+        valid = false;
+      }
+
+      if (!valid) return; // Stop execution if inputs are invalid
+
+      // -----------------------------
+      // Generate input fields for each bar
+      // -----------------------------
+      createBarInputs();
+
+      // -----------------------------
+      // Disable Add button and initial inputs
+      // -----------------------------
+      barBtn.disabled = true;
+      disableFields(['numBars','gridInterval','yLabel','chartTitle']);
     });
     formContainer.appendChild(barBtn);
   }
 }
 
 // =============================
-// Helper functions for creating input elements
+// Helper Function: Create text input
 // =============================
-
-// Creates a labeled text input (used for titles, labels, axis names)
 function createInput(labelText, id) {
   const div = document.createElement('div');
+  div.className = 'input-group';
   const label = document.createElement('label');
   label.textContent = labelText;
   const input = document.createElement('input');
@@ -88,9 +179,12 @@ function createInput(labelText, id) {
   return div;
 }
 
-// Creates a labeled number input with a range (used for numeric fields)
+// =============================
+// Helper Function: Create number input with min/max enforcement
+// =============================
 function createNumberInput(labelText, id, min, max) {
   const div = document.createElement('div');
+  div.className = 'input-group';
   const label = document.createElement('label');
   label.textContent = labelText;
   const input = document.createElement('input');
@@ -99,9 +193,9 @@ function createNumberInput(labelText, id, min, max) {
   input.min = min;
   input.max = max;
 
-  // Real-time enforcement of the max value
-  input.addEventListener('input', () => {
-    if (parseFloat(input.value) > max) input.value = max;
+  // Dynamically enforce maximum value
+  input.addEventListener('input', () => { 
+    if (parseFloat(input.value) > max) input.value = max; 
   });
 
   div.appendChild(label);
@@ -110,22 +204,48 @@ function createNumberInput(labelText, id, min, max) {
 }
 
 // =============================
-// PIE CHART FORM HANDLING
+// Helper Function: Show inline error for a specific input
+// =============================
+function showError(id, msg) {
+  const input = document.getElementById(id);
+  input.style.border = '2px solid red'; // Highlight input in red
+  let error = document.createElement('small');
+  error.className = 'error';
+  error.textContent = msg;
+
+  // Add error message only if it doesn't already exist
+  if (!input.nextElementSibling || !input.nextElementSibling.classList.contains('error')) {
+    input.parentNode.appendChild(error);
+  }
+}
+
+// =============================
+// Helper Function: Clear all errors
+// =============================
+function clearErrors() {
+  document.querySelectorAll('.error').forEach(e => e.remove()); // Remove all error messages
+  document.querySelectorAll('input').forEach(i => i.style.border = ''); // Reset input borders
+}
+
+// =============================
+// Helper Function: Disable multiple fields by ID
+// =============================
+function disableFields(ids) {
+  ids.forEach(id => document.getElementById(id).disabled = true);
+}
+
+// =============================
+// Create dynamic inputs for Pie chart sectors
 // =============================
 function createSectorInputs() {
-  // Get user input for number of sectors and total chart value
   const num = parseInt(document.getElementById('numSectors').value);
   const total = parseFloat(document.getElementById('totalValue').value);
   const title = document.getElementById('chartTitle').value;
 
-  // Validate input range
-  if (isNaN(num) || num < 2 || num > 6) return alert('Enter 2–6 sectors.');
-
-  // Create container to hold sector input fields
   const inputArea = document.createElement('div');
   inputArea.id = 'sectorInputs';
   formContainer.appendChild(inputArea);
-  inputArea.innerHTML = '';
+  inputArea.innerHTML = ''; // Clear previous sector inputs
 
   // Generate input fields for each sector
   for (let i = 1; i <= num; i++) {
@@ -134,11 +254,10 @@ function createSectorInputs() {
     div.appendChild(label);
 
     if (i < num) {
-      // All sectors except the last require a value
       const value = createNumberInput(`Value for sector ${i}:`, `sectorValue${i}`, 1, total);
       div.appendChild(value);
     } else {
-      // The last sector value is auto-calculated
+      // Last sector value is auto-calculated
       const note = document.createElement('p');
       note.textContent = 'Last sector value will be auto-calculated.';
       div.appendChild(note);
@@ -146,22 +265,22 @@ function createSectorInputs() {
     inputArea.appendChild(div);
   }
 
-  // Button to draw the pie chart
+  // Button to draw the Pie chart
   const drawBtn = document.createElement('button');
   drawBtn.textContent = 'Draw Pie Chart';
-  drawBtn.addEventListener('click', () => {
-    drawPieChart(title, total, num);
-  });
+  drawBtn.addEventListener('click', () => drawPieChart(title, total, num));
   inputArea.appendChild(drawBtn);
 }
 
-// Draw the Pie Chart using Google Charts
+// =============================
+// Draw Pie chart using Google Charts
+// =============================
 function drawPieChart(title, total, num) {
   google.charts.setOnLoadCallback(() => {
-    let dataArr = [['Label', 'Value']];
+    const dataArr = [['Label', 'Value']];
     let sum = 0;
 
-    // Build data array from user inputs
+    // Collect values from inputs
     for (let i = 1; i <= num; i++) {
       const label = document.getElementById(`sectorLabel${i}`).value;
       if (i < num) {
@@ -169,128 +288,104 @@ function drawPieChart(title, total, num) {
         sum += value;
         dataArr.push([label, value]);
       } else {
-        // Calculate the remaining sector value automatically
+        // Last sector value = total - sum of previous
         dataArr.push([label, total - sum]);
       }
     }
 
-    // Convert to Google Charts DataTable
     const data = google.visualization.arrayToDataTable(dataArr);
 
-    // Assign unique colors to each sector
-    const colorPalette = generateColors(num);
-
-    // Chart display options
     const options = {
-      title: title,
+      title,
       width: 500,
       height: 400,
-      colors: colorPalette,
+      colors: generateColors(num), // Assign colors
       legend: { position: 'right' },
-      chartArea: { left: '10%', top: 80, width: '80%', height: '70%' } // helps keep chart centered
+      chartArea: { left: '10%', top: 80, width: '80%', height: '70%' }
     };
 
-    // Draw the pie chart
-    const chart = new google.visualization.PieChart(chartContainer);
-    chart.draw(data, options);
+    new google.visualization.PieChart(chartContainer).draw(data, options);
   });
 }
 
 // =============================
-// BAR CHART FORM HANDLING
+// Create dynamic inputs for Bar chart
 // =============================
 function createBarInputs() {
-  // Get basic parameters for the bar chart
   const num = parseInt(document.getElementById('numBars').value);
   const grid = parseInt(document.getElementById('gridInterval').value);
   const yLabel = document.getElementById('yLabel').value;
   const title = document.getElementById('chartTitle').value;
 
-  // Validate range for number of bars
-  if (isNaN(num) || num < 2 || num > 6) return alert('Enter 2–6 bars.');
-
-  // Container for bar inputs
   const inputArea = document.createElement('div');
   inputArea.id = 'barInputs';
   formContainer.appendChild(inputArea);
-  inputArea.innerHTML = '';
+  inputArea.innerHTML = ''; // Clear previous bar inputs
 
   // Generate label/value inputs for each bar
   for (let i = 1; i <= num; i++) {
-    const label = createInput(`Label for bar ${i}:`, `barLabel${i}`);
-    const value = createNumberInput(`Value for bar ${i} (max 400):`, `barValue${i}`, 1, 400);
-    inputArea.appendChild(label);
-    inputArea.appendChild(value);
+    inputArea.appendChild(createInput(`Label for bar ${i}:`, `barLabel${i}`));
+    inputArea.appendChild(createNumberInput(`Value for bar ${i} (max 400):`, `barValue${i}`, 1, 400));
   }
 
-  // Button to draw bar chart
+  // Button to draw the Bar chart
   const drawBtn = document.createElement('button');
   drawBtn.textContent = 'Draw Bar Chart';
-  drawBtn.addEventListener('click', () => {
-    drawBarChart(title, yLabel, grid, num);
-  });
+  drawBtn.addEventListener('click', () => drawBarChart(title, yLabel, grid, num));
   inputArea.appendChild(drawBtn);
 }
 
-// Draw Bar Chart with unique bar colors and enforced limits
+// =============================
+// Draw Bar chart using Google Charts
+// =============================
 function drawBarChart(title, yLabel, gridInterval, num) {
   google.charts.setOnLoadCallback(() => {
-    let dataArr = [['Label', 'Value', { role: 'style' }]];
+    const dataArr = [['Label', 'Value', { role: 'style' }]];
     const colors = generateColors(num);
+    let maxValue = 0;
 
-    let maxValue = 0; // Track maximum value for setting the Y-axis
-
-    // Collect bar data and validate
+    // Collect values from inputs and find maximum
     for (let i = 1; i <= num; i++) {
       const label = document.getElementById(`barLabel${i}`).value;
       const value = parseFloat(document.getElementById(`barValue${i}`).value);
 
-      if (isNaN(value) || value < 0) {
-        alert(`Bar ${i}: please enter a valid positive number.`);
-        return;
-      }
-      if (value > 400) {
-        alert(`Bar ${i}: value exceeds maximum (400).`);
-        return;
-      }
+      // Validate values
+      if (isNaN(value) || value < 0) return showError(`barValue${i}`, 'Enter positive number');
+      if (value > 400) return showError(`barValue${i}`, 'Max value 400');
 
       if (value > maxValue) maxValue = value;
+
       dataArr.push([label, value, `color: ${colors[i - 1]}`]);
     }
 
-    // Convert to Google DataTable
     const data = google.visualization.arrayToDataTable(dataArr);
 
-    // Round maxValue up to the next multiple of gridInterval
+    // Round maximum Y-axis value up to nearest multiple of gridInterval
     const roundedMax = Math.ceil(maxValue / gridInterval) * gridInterval;
 
     const options = {
-      title: title,
+      title,
       width: 800,
       height: 500,
       hAxis: { title: 'Bars' },
       vAxis: {
         title: yLabel,
-        viewWindow: { min: 0, max: roundedMax }, // set min and max
-        gridlines: { count: Math.floor(roundedMax / gridInterval) + 1 }, // approximate grid count
-        ticks: Array.from({length: roundedMax / gridInterval + 1}, (_, i) => i * gridInterval) // force exact intervals
+        viewWindow: { min: 0, max: roundedMax },
+        gridlines: { count: Math.floor(roundedMax / gridInterval) + 1 },
+        ticks: Array.from({ length: roundedMax / gridInterval + 1 }, (_, i) => i * gridInterval)
       },
       legend: { position: 'none' },
-      bar: { groupWidth: '70%' },
+      bar: { groupWidth: '70%' }
     };
 
-    // Draw the column chart (vertical bars)
-    const chart = new google.visualization.ColumnChart(chartContainer);
-    chart.draw(data, options);
+    new google.visualization.ColumnChart(chartContainer).draw(data, options);
   });
 }
 
-
 // =============================
-// Color Generator
+// Generate a color palette for charts
 // =============================
-// Returns a list of distinct preset colors (max 6)
 function generateColors(num) {
   const presetColors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#A142F4', '#F46D43'];
-  return presetColors.slice(0, num);
+  return presetColors.slice(0, num); // Return only as many colors as needed
 }
