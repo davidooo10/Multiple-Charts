@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Multiple Charts</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Google Charts Library -->
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+</head>
+<body>
+  <h1>Chart Generator</h1>
+
+  <div>
+    <label>Choose chart type:</label>
+    <select id="chartType">
+      <option value="pie">Pie Chart</option>
+      <option value="bar">Bar Chart</option>
+    </select>
+    <button id="generateBtn">Generate Chart</button>
+  </div>
+
+  <div id="formContainer"></div>
+  <div id="chartContainer" style="width: 800px; height: 500px; margin: 50px auto;"></div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
